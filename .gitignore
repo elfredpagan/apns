@@ -17,3 +17,4 @@ erl_crash.dump
 *.ez
 
 priv/*.pem
+.DS_Store
