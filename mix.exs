@@ -3,18 +3,19 @@ defmodule Apns.Mixfile do
 
   def project do
     [app: :apns,
-    version: "0.1.0",
-    elixir: "~> 1.4",
-    build_embedded: Mix.env == :prod,
-    start_permanent: Mix.env == :prod,
-    deps: deps()]
+     version: "0.1.0",
+     lockfile: "mix.lock",
+     elixir: "~> 1.4",
+     build_embedded: Mix.env == :prod,
+     start_permanent: Mix.env == :prod,
+     deps: deps()]
   end
 
   # Configuration for the OTP application
   #
   # Type "mix help compile.app" for more information
   def application do
-    [applications: [:logger, :poolboy],
+    [applications: [:logger, :poolboy, :gun],
      mod: {APNS, []}]
   end
 
@@ -36,6 +37,8 @@ defmodule Apns.Mixfile do
       {:connection, "~> 1.0"},
       {:poison, "~> 1.5 or ~> 2.0"},
       {:poolboy, "~> 1.5"},
+      {:gun, git: "https://github.com/ninenines/gun.git"},
+      {:joken, "~> 1.4"}
     ]
   end
 end

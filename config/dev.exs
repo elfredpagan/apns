@@ -1,9 +1,8 @@
 use Mix.Config
 # config :apns, :config,
-#   push_host: "gateway.sandbox.push.apple.com",
-#   push_port: 2195,
-#   feedback_host: "feedback.sandbox.push.apple.com",
-#   feedback_port: 2196,
-#   cert: "priv/cert.pem",
+#   push_host: "api.development.push.apple.com",
+#   push_port: 443,
 #   key: "priv/key.pem",
+#   kid: "XXXX",
+#   app_id: "XXXX",
 #   feedback_handler: APNS.FeedbackHandler

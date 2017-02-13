@@ -1,6 +1,6 @@
 defmodule ApnsTest do
   use ExUnit.Case
-  doctest APNS
+  doctest Apns
 
   test "the truth" do
     assert 1 + 1 == 2
