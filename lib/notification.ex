@@ -30,6 +30,7 @@ defmodule APNS.Alert do
     |> Map.put("loc-key", alert[:loc_key])
     |> Map.put("loc-args", alert[:loc_args])
     |> Map.put("launch-image", alert[:launch_image])
+    |> Map.drop([:title_loc_key, :title_loc_args, :action_loc_key, :loc_key, :loc_args, :launch_image])
     |> Enum.filter(fn {_, v} -> v != nil end)
     |> Enum.into(%{})
   end
@@ -40,7 +41,7 @@ defmodule APNS.Alert do
 end
 
 defmodule APNS.Notification do
-  defstruct [:aps, :custom_map, :identifier, :expiration_date, :high_priority]
+  defstruct [aps: nil, custom_map: nil, identifier: nil, expiration_date: nil, priority: 10, thread_id: nil, topic: nil]
 
   def to_json(notification) do
     {:ok, json} = notification.custom_map || %{}
@@ -58,10 +59,34 @@ defmodule APNS.Notification do
   end
 
   def simple_alert(%APNS.Notification{} = notification, text) do
-    struct(notification, aps: %APNS.APS{alert: text})
+    struct(notification, aps: %{(notification.aps || %APNS.APS{}) | alert: text})
   end
 
-  def content_available(%APNS.Notification{} = notification) do
-    struct(notification, aps: %APNS.APS{content_available: true})
+  def alert(%APNS.Notification{} = notification, %APNS.Alert{} = alert) do
+    struct(notification, aps: %{(notification.aps || %APNS.APS{}) | alert: alert})
+  end
+
+  def content_available(%APNS.Notification{} = notification, value) do
+    struct(notification, aps: %APNS.APS{content_available: value})
+  end
+
+  def badge(%APNS.Notification{} = notification, count) do
+    struct(notification, aps: %{(notification.aps || %APNS.APS{}) | badge: count})
+  end
+
+  def sound(%APNS.Notification{} = notification, sound) do
+    struct(notification, aps: %{(notification.aps || %APNS.APS{}) | sound: sound})
+  end
+
+  def mutable_content(%APNS.Notification{} = notification, mutable_content) do
+    struct(notification, aps: %{(notification.aps || %APNS.APS{}) | mutable_content: mutable_content})
+  end
+
+  def category(%APNS.Notification{} = notification, category) do
+    struct(notification, aps: %{(notification.aps || %APNS.APS{}) | category: category})
+  end
+
+  def thread_id(%APNS.Notification{} = notification, thread_id) do
+    struct(notification, aps: %{(notification.aps || %APNS.APS{}) | thread_id: thread_id})
   end
 end

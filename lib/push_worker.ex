@@ -85,33 +85,34 @@ defmodule APNS.PushWorker do
 
   # private functions
   defp encode_notification(token, notification) do
-    frame_data = << 1, 32 :: size(16), token::binary >>
     json = APNS.Notification.to_json(notification)
-    frame_data = frame_data <> <<2, byte_size(json) :: size(16), json::binary >>
+    frame_data = <<>>
+    |> encode_frame_data(1, byte_size(token), token)
+    |> encode_frame_data(2, byte_size(json), json)
+    |> encode_frame_data(3, 4, notification.identifier)
+    |> encode_frame_data(4, 4, notification.expiration_date)
+    |> encode_frame_data(5, 1, notification.priority)
 
-    frame_data =
-    if notification.identifier do
-      frame_data <> << 3, 4 :: size(16), notification.identifier :: size(32) >>
-    else
-      frame_data
-    end
+    << 2 :: size(8), byte_size(frame_data) :: size(32), frame_data :: binary >>
+  end
 
-    frame_data =
-    if notification.expiration_date do
-      frame_data <> << 4, 4 :: size(16), notification.expiration_date :: size(32) >>
-    else
-      frame_data
-    end
+  # Not sure why I need the clauses with specific sizes.
+  # It seems like I can't use dynamic values in a binary size() modifier?
 
-    frame_data =
-    if notification.high_priority do
-      frame_data <> << 5, 1, notification.high_priority && 10 || 5 >>
-    else
-      frame_data
-    end
+  defp encode_frame_data(frame_data, _id, _size, nil) do
+    frame_data
+  end
 
-    << 2, byte_size(frame_data) :: size(32), frame_data :: binary >>
+  defp encode_frame_data(frame_data, id, size, data) when is_binary(data) do
+    frame_data <> << id :: size(8), size :: size(16), data :: binary >>
+  end
 
+  defp encode_frame_data(frame_data, id, 1 = size, data) do
+    frame_data <> << id :: size(8), size :: size(16), data :: size(8) >>
+  end
+
+  defp encode_frame_data(frame_data, id, 4 = size, data) do
+    frame_data <> << id :: size(8), size :: size(16), data :: size(32) >>
   end
 
 end
