@@ -38,7 +38,8 @@ defmodule APNS.PushWorker do
     case :ssl.connect(host, port, opts, timeout) do
       {:ok, socket} ->
         {:ok, %{state | socket: socket}}
-      {:error, _} ->
+      {:error, reason} ->
+        :error_logger.format("Connection error: ~s state: ~s ~n", [reason, inspect(state)])
         {:backoff, 1000, state}
       end
   end
