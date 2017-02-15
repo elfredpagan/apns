@@ -41,7 +41,7 @@ defmodule APNS.Alert do
 end
 
 defmodule APNS.Notification do
-  defstruct [aps: nil, custom_map: nil, identifier: nil, expiration_date: nil, priority: 10, thread_id: nil, topic: nil]
+  defstruct [aps: nil, custom_map: nil, identifier: nil, expiration_date: nil, priority: 10, collapse_id: nil, topic: nil]
 
   def to_json(notification) do
     {:ok, json} = notification.custom_map || %{}
