@@ -15,8 +15,7 @@ defmodule APNS do
     # Define workers and child supervisors to be supervised
     children = [
       # Starts a worker by calling: Apns.Worker.start_link(arg1, arg2, arg3)
-      # worker(APNS.FeedbackWorker, [:ok]),
-      :poolboy.child_spec(:hello_pool, pool_options, [])
+      :poolboy.child_spec(:apns_pool, pool_options, [])
     ]
 
     # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html

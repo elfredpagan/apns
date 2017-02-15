@@ -30,6 +30,7 @@ defmodule APNS.Alert do
     |> Map.put("loc-key", alert[:loc_key])
     |> Map.put("loc-args", alert[:loc_args])
     |> Map.put("launch-image", alert[:launch_image])
+    |> Map.drop([:title_loc_key, :title_loc_args, :action_loc_key, :loc_key, :loc_args, :launch_image])
     |> Enum.filter(fn {_, v} -> v != nil end)
     |> Enum.into(%{})
   end
@@ -40,10 +41,11 @@ defmodule APNS.Alert do
 end
 
 defmodule APNS.Notification do
-  defstruct [aps: nil, custom_map: nil, identifier: nil, expiration_date: nil, priority: 10, thread_id: nil, topic: nil]
+  defstruct [aps: nil, custom_map: nil, identifier: nil, expiration_date: nil, priority: 10, collapse_id: nil, topic: nil]
 
   def to_json(notification) do
-    {:ok, json} = notification.custom_map || %{}
+    map = notification.custom_map || %{}
+    {:ok, json} = map
     |> Map.put(:aps, APNS.APS.to_map(notification.aps))
     |> Poison.encode
     json
@@ -57,16 +59,16 @@ defmodule APNS.Notification do
     struct(notification, custom_map: map)
   end
 
-  def simple_alert(%APNS.Notification{} = notification, text) do
-    struct(notification, aps: %APNS.APS{alert: text})
+  def alert(%APNS.Notification{} = notification, alert) do
+    struct(notification, aps: %{(notification.aps || %APNS.APS{}) | alert: alert})
   end
 
-  def alert(%APNS.Notification{} = notification, %APNS.Alert{} = alert) do
-    struct(notification, aps: %APNS.APS{alert: alert})
+  def content_available(%APNS.Notification{} = notification, true) do
+    struct(notification, aps: %APNS.APS{content_available: true})
   end
 
   def content_available(%APNS.Notification{} = notification, value) do
-    struct(notification, aps: %APNS.APS{content_available: value})
+    struct(notification, aps: %{(notification.aps || %APNS.APS{}) | content_available: value})
   end
 
   def badge(%APNS.Notification{} = notification, count) do
@@ -88,5 +90,4 @@ defmodule APNS.Notification do
   def thread_id(%APNS.Notification{} = notification, thread_id) do
     struct(notification, aps: %{(notification.aps || %APNS.APS{}) | thread_id: thread_id})
   end
-
 end

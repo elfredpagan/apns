@@ -50,6 +50,7 @@ defmodule APNS.PushWorker do
   end
 
   def handle_cast({:push, token, notification}, %{pid: pid, app_id: app_id, key: key, kid: kid} = state) do
+    token = Base.encode16(token)
     jwt = generate_token(app_id, key, kid)
     json = to_charlist(APNS.Notification.to_json(notification))
 
@@ -89,7 +90,7 @@ defmodule APNS.PushWorker do
     |> build_header_list({"apns-expiration", notification.expiration_date})
     |> build_header_list({"apns-priority", notification.priority})
     |> build_header_list({"apns-topic", notification.topic})
-    |> build_header_list({"apns-collapse-id", notification.thread_id})
+    |> build_header_list({"apns-collapse-id", notification.collapse_id})
   end
 
   defp build_header_list(headers, {_, nil}) do
