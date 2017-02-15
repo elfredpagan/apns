@@ -44,7 +44,8 @@ defmodule APNS.Notification do
   defstruct [aps: nil, custom_map: nil, identifier: nil, expiration_date: nil, priority: 10, collapse_id: nil, topic: nil]
 
   def to_json(notification) do
-    {:ok, json} = notification.custom_map || %{}
+    map = notification.custom_map || %{}
+    {:ok, json} = map
     |> Map.put(:aps, APNS.APS.to_map(notification.aps))
     |> Poison.encode
     json
@@ -58,16 +59,16 @@ defmodule APNS.Notification do
     struct(notification, custom_map: map)
   end
 
-  def simple_alert(%APNS.Notification{} = notification, text) do
-    struct(notification, aps: %{(notification.aps || %APNS.APS{}) | alert: text})
-  end
-
-  def alert(%APNS.Notification{} = notification, %APNS.Alert{} = alert) do
+  def alert(%APNS.Notification{} = notification, alert) do
     struct(notification, aps: %{(notification.aps || %APNS.APS{}) | alert: alert})
   end
 
+  def content_available(%APNS.Notification{} = notification, true) do
+    struct(notification, aps: %APNS.APS{content_available: true})
+  end
+
   def content_available(%APNS.Notification{} = notification, value) do
-    struct(notification, aps: %APNS.APS{content_available: value})
+    struct(notification, aps: %{(notification.aps || %APNS.APS{}) | content_available: value})
   end
 
   def badge(%APNS.Notification{} = notification, count) do

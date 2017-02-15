@@ -6,6 +6,7 @@ defmodule APNS.PushWorker do
     port = config[:push_port]
     cert_path = config[:cert]
     key_path = config[:key]
+    feedback_handler = config[:feedback_handler]
     opts = [
       reuse_sessions: false,
       mode: :binary,
@@ -18,7 +19,8 @@ defmodule APNS.PushWorker do
       port: port,
       opts: opts,
       timeout: 60 * 1000,
-      socket: nil
+      socket: nil,
+      feedback_handler: feedback_handler
     }
     Connection.start_link(__MODULE__, state)
   end
@@ -41,7 +43,7 @@ defmodule APNS.PushWorker do
       end
   end
 
-  def disconnect(info, %{socket: socket} = s) do
+  def disconnect(info, %{socket: socket} = state) do
     :ok = :ssl.close(socket)
     case info do
       {:close, from} ->
@@ -50,14 +52,17 @@ defmodule APNS.PushWorker do
         :error_logger.format("Connection closed~n", [])
       {:error, reason} ->
         reason = :inet.format_error(reason)
-        :error_logger.format("Connection error: ~s~n", [reason])
+        :error_logger.format("Connection error: ~s state: ~s ~n", [reason, inspect(state)])
     end
-    {:connect, :reconnect, %{s | socket: nil}}
+    {:connect, :reconnect, %{state | socket: nil}}
   end
 
-  def handle_info({:ssl, socket, msg}, %{socket: socket} = state) do
-    << command :: size(8), status :: size(8), identifier :: size(32)>> = msg
-    IO.puts "command = #{command} status = #{status}, identifier = #{identifier}"
+  def handle_info({:ssl, socket, _msg}, %{socket: socket, feedback_handler: nil} = state) do
+    {:no_reply, state}
+  end
+
+  def handle_info({:ssl, socket, << command :: size(8), status :: size(8), identifier :: size(32)>> = msg}, %{socket: socket, feedback_handler: handler} = state) do
+    handler.handle_feedback(command, status, identifier)
     {:no_reply, state}
   end
 
@@ -70,49 +75,19 @@ defmodule APNS.PushWorker do
   end
 
   def handle_call({:push, token, notification}, _from, %{socket: socket} = state) do
-    data = encode_notification(token, notification)
+    data = APNS.Encoder.encode_notification(token, notification)
     case :ssl.send(socket, data) do
       :ok ->
         {:reply, :ok, state}
-      {:error, _} = error ->
+      {:error, reason} = error ->
+        reason = :inet.format_error(reason)
+        :error_logger.format("connection error: ~s~n", [reason])
         {:disconnect, error, state}
     end
   end
 
   def handle_call(_, _, %{socket: nil} = state) do
     {:reply, {:error, :closed}, state}
-  end
-
-  # private functions
-  defp encode_notification(token, notification) do
-    json = APNS.Notification.to_json(notification)
-    frame_data = <<>>
-    |> encode_frame_data(1, byte_size(token), token)
-    |> encode_frame_data(2, byte_size(json), json)
-    |> encode_frame_data(3, 4, notification.identifier)
-    |> encode_frame_data(4, 4, notification.expiration_date)
-    |> encode_frame_data(5, 1, notification.priority)
-
-    << 2 :: size(8), byte_size(frame_data) :: size(32), frame_data :: binary >>
-  end
-
-  # Not sure why I need the clauses with specific sizes.
-  # It seems like I can't use dynamic values in a binary size() modifier?
-
-  defp encode_frame_data(frame_data, _id, _size, nil) do
-    frame_data
-  end
-
-  defp encode_frame_data(frame_data, id, size, data) when is_binary(data) do
-    frame_data <> << id :: size(8), size :: size(16), data :: binary >>
-  end
-
-  defp encode_frame_data(frame_data, id, 1 = size, data) do
-    frame_data <> << id :: size(8), size :: size(16), data :: size(8) >>
-  end
-
-  defp encode_frame_data(frame_data, id, 4 = size, data) do
-    frame_data <> << id :: size(8), size :: size(16), data :: size(32) >>
   end
 
 end

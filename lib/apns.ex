@@ -15,7 +15,6 @@ defmodule APNS do
     # Define workers and child supervisors to be supervised
     children = [
       # Starts a worker by calling: Apns.Worker.start_link(arg1, arg2, arg3)
-      worker(APNS.FeedbackWorker, [:ok]),
       :poolboy.child_spec(:hello_pool, pool_options, [])
     ]
 
@@ -31,7 +30,4 @@ defmodule APNS do
       end)
   end
 
-  def latest_feedback() do
-    APNS.FeedbackWorker.latest_feedback(APNS.FeedbackWorker)
-  end
 end
